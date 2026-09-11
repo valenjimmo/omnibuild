@@ -32,6 +32,9 @@ export function demoData(): Dataset {
         organization_id: org,
         name: "Westwood ADU",
         slug: "westwood-adu",
+        contact_email: "owner@westwood.example",
+        website_url: "",
+        whatsapp_number: "",
       },
     ],
     memberships: [

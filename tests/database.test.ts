@@ -7,7 +7,7 @@ test("PostgreSQL tenant isolation, homeowner authorization, storage paths, and p
   const db = new PGlite();
   try {
     await db.exec(`
- create role authenticated;
+ create role authenticated; create role anon; create role service_role;
  create schema auth; create schema storage; create schema extensions;
  create table auth.users(id uuid primary key,email text);
  create function auth.uid() returns uuid language sql stable as $$ select (nullif(current_setting('request.jwt.claims',true),'')::jsonb->>'sub')::uuid $$;

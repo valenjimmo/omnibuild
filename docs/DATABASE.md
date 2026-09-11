@@ -34,6 +34,10 @@ Milestones, updates, documents, and messages reference `(organization_id, projec
 
 Indexes cover organization lookups, client auth identity, project assignment, and message ordering. Immutable-identity triggers prevent changing a child record's ID or tenant. Client auth bindings can only be assigned by trusted invitation acceptance, not direct authenticated table writes.
 
-`create_organization` atomically creates the organization, initial owner membership, and starter template. `accept_invitations` locks matching unexpired invitations, adds staff memberships or associates a client, and marks the invitation accepted. These security-definer functions have a fixed empty search path and explicit authenticated-only execution grants.
+`create_contractor` provisions a company only for an explicitly granted Omnibuild administrator. Contractor owners join through platform-issued invitations. The legacy `create_organization` is no longer executable by authenticated users. `accept_invitations` locks matching unexpired invitations, adds staff memberships or associates a client, and marks the invitation accepted. These security-definer functions have a fixed empty search path and explicit authenticated-only execution grants.
 
 Apply migrations in filename order. `supabase db reset` rebuilds a local environment. `supabase db push` applies unapplied migrations to the linked hosted environment. Never edit an applied migration on a deployed project; introduce a new migration instead.
+
+## Platform extension tables
+
+`platform_admins` stores operator-provisioned platform accounts. `inquiries` and `inquiry_messages` hold tenant-isolated prospective-customer conversations. `whatsapp_accounts` maps server-managed Meta receiving phone IDs to organizations. Inquiry/message composite keys prevent cross-tenant linkage. `ingest_whatsapp` resolves the organization from this mapping and atomically deduplicates provider message IDs.

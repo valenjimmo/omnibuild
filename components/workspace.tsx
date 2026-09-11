@@ -36,6 +36,7 @@ import {
 } from "lucide-react";
 import { browserDB, configured } from "@/lib/supabase";
 import { Dataset, Row, Table, demoData, emptyData } from "@/lib/data";
+import Communications from "./communications";
 import { storagePath, validUpload } from "@/lib/validation";
 
 type View =
@@ -100,7 +101,16 @@ function Avatar({ name, color = 0 }: { name: string; color?: number }) {
   return <span className={"avatar color-" + color}>{initials(name)}</span>;
 }
 
-export default function Workspace({ portalSlug }: { portalSlug?: string }) {
+export default function Workspace({
+  portalSlug,
+  organizationSlug,
+}: {
+  portalSlug?: string;
+  organizationSlug?: string;
+}) {
+  const targetSlug = portalSlug || organizationSlug;
+  const [platformAdmin, setPlatformAdmin] = useState(false);
+  const [messageChannel, setMessageChannel] = useState("projects");
   const [data, setData] = useState<Dataset>(emptyData),
     [orgId, setOrgId] = useState(""),
     [userId, setUserId] = useState("demo-owner"),
@@ -128,8 +138,9 @@ export default function Workspace({ portalSlug }: { portalSlug?: string }) {
   const member = data.memberships.find(
     (m) => m.organization_id === org?.id && m.user_id === userId,
   );
-  const clientMode = !!portalSlug || (!member && authenticated);
-  const owner = demo ? !clientMode : member?.role === "owner";
+  const clientMode =
+    !!portalSlug || (!member && authenticated && !platformAdmin && !demo);
+  const owner = demo ? !clientMode : platformAdmin || member?.role === "owner";
   const scope = <T extends Row>(rows: T[]) =>
     rows.filter((r) => r.organization_id === org?.id);
   const clients = scope(data.clients),
@@ -218,6 +229,12 @@ export default function Workspace({ portalSlug }: { portalSlug?: string }) {
       return;
     }
     setUserId(user.id);
+    const { data: admin } = await db.rpc("is_platform_admin");
+    setPlatformAdmin(!!admin);
+    if (!targetSlug) {
+      location.replace("/");
+      return;
+    }
     const { error: claimError } = await db.rpc("accept_invitations");
     if (claimError) notify(claimError.message);
     const tables = Object.keys(emptyData) as Table[];
@@ -234,14 +251,18 @@ export default function Workspace({ portalSlug }: { portalSlug?: string }) {
     setOrgId(
       (previous) =>
         loaded.organizations.find((o) =>
-          portalSlug ? o.slug === portalSlug : o.id === previous,
+          targetSlug ? o.slug === targetSlug : o.id === previous,
         )?.id ||
-        (!portalSlug ? loaded.organizations[0]?.id : "") ||
+        (!targetSlug ? loaded.organizations[0]?.id : "") ||
         "",
     );
     setLoading(false);
   }
   useEffect(() => {
+    if (new URLSearchParams(location.search).get("view") === "inquiries") {
+      setView("Messages");
+      setMessageChannel("inquiries");
+    }
     if (new URLSearchParams(location.search).get("auth") === "error")
       notify(
         "That sign-in link is invalid or expired. Request a new invitation or sign in with your password.",
@@ -253,7 +274,10 @@ export default function Workspace({ portalSlug }: { portalSlug?: string }) {
         if (saved) d = JSON.parse(saved);
       } catch {}
       setData(d);
-      setOrgId(d.organizations[0].id);
+      setOrgId(
+        d.organizations.find((o) => o.slug === targetSlug)?.id ||
+          d.organizations[0].id,
+      );
       setUserId(portalSlug ? "demo-client" : "demo-owner");
       setAuthenticated(true);
       setLoading(false);
@@ -588,38 +612,14 @@ export default function Workspace({ portalSlug }: { portalSlug?: string }) {
     return (
       <main className="onboarding">
         <Brand />
-        <h1>
-          {portalSlug
-            ? "Your portal is not available"
-            : "Make yourself at home."}
-        </h1>
+        <h1>Your workspace is not available.</h1>
         <p>
-          {portalSlug
-            ? "Sign in with the email your contractor invited."
-            : "Create your company workspace to get started."}
+          Use the account invited by Omnibuild or your contractor. Contractor
+          accounts are created from the Omnibuild hub.
         </p>
-        {!portalSlug && (
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              const f = new FormData(e.currentTarget);
-              action(async () => {
-                const { error } = await browserDB().rpc("create_organization", {
-                  company_name: f.get("name"),
-                  company_slug: f.get("slug"),
-                });
-                if (error) throw error;
-                await reload();
-              });
-            }}
-          >
-            {input("Company name", "name")}
-            {input("Portal slug (lowercase letters, numbers, hyphens)", "slug")}
-            <button className="button primary" disabled={busy}>
-              Create workspace <ArrowRight size={16} />
-            </button>
-          </form>
-        )}
+        <a className="button" href="/">
+          Return to Omnibuild
+        </a>
         <button
           className="text-button"
           onClick={() =>
@@ -634,7 +634,7 @@ export default function Workspace({ portalSlug }: { portalSlug?: string }) {
         {toast && <p role="status">{toast}</p>}
       </main>
     );
-  if (portalSlug && org?.slug !== portalSlug)
+  if (targetSlug && org?.slug !== targetSlug)
     return (
       <main className="onboarding">
         <Brand />
@@ -683,9 +683,13 @@ export default function Workspace({ portalSlug }: { portalSlug?: string }) {
               aria-label="Switch organization"
               value={orgId}
               onChange={(e) => {
-                setOrgId(e.target.value);
-                setSelected(null);
-                setConversation("");
+                const next = data.organizations.find(
+                  (o) => o.id === e.target.value,
+                );
+                if (next)
+                  location.assign(
+                    `${clientMode ? "/portal" : "/workspace"}/${next.slug}`,
+                  );
               }}
             >
               {data.organizations.map((o) => (
@@ -712,13 +716,13 @@ export default function Workspace({ portalSlug }: { portalSlug?: string }) {
             const Icon = icons[item];
             return (
               <button
-                key={item}
-                aria-label={item}
+                key={item === "Clients" ? "Homeowners" : item}
+                aria-label={item === "Clients" ? "Homeowners" : item}
                 className={view === item ? "nav-item active" : "nav-item"}
                 onClick={() => navigate(item)}
               >
                 <Icon size={19} />
-                {item}
+                {item === "Clients" ? "Homeowners" : item}
                 {item === "Messages" && messages.length > 0 && (
                   <span className="nav-count">{messages.length}</span>
                 )}
@@ -734,8 +738,8 @@ export default function Workspace({ portalSlug }: { portalSlug?: string }) {
                 const Icon = icons[item];
                 return (
                   <button
-                    key={item}
-                    aria-label={item}
+                    key={item === "Clients" ? "Homeowners" : item}
+                    aria-label={item === "Clients" ? "Homeowners" : item}
                     className={view === item ? "nav-item active" : "nav-item"}
                     onClick={() => navigate(item)}
                   >
@@ -885,7 +889,9 @@ export default function Workspace({ portalSlug }: { portalSlug?: string }) {
                       ? "Message templates"
                       : view === "Settings"
                         ? "Workspace settings"
-                        : view}
+                        : view === "Clients"
+                          ? "Homeowners"
+                          : view}
                 </h1>
                 <p>
                   {
@@ -895,7 +901,8 @@ export default function Workspace({ portalSlug }: { portalSlug?: string }) {
                         : "Here’s what’s happening across your projects today.",
                       Projects:
                         "Every build, from the first sketch to the final walkthrough.",
-                      Clients: "The people at the heart of every project.",
+                      Clients:
+                        "Your homeowners and their project relationships.",
                       Messages:
                         "Keep the conversation moving, all in one place.",
                       Documents:
@@ -946,7 +953,7 @@ export default function Workspace({ portalSlug }: { portalSlug?: string }) {
                     color: "green",
                   },
                   {
-                    label: clientMode ? "Project milestones" : "Happy clients",
+                    label: clientMode ? "Project milestones" : "Homeowners",
                     value: clientMode
                       ? milestones.filter((m) => m.completed).length
                       : clients.filter((c) => !c.archived).length,
@@ -1497,7 +1504,31 @@ export default function Workspace({ portalSlug }: { portalSlug?: string }) {
               </div>
             </>
           )}
-          {view === "Messages" && renderMessages()}
+          {view === "Messages" && (
+            <>
+              {!clientMode && (
+                <div className="detail-tabs">
+                  <button
+                    className={messageChannel === "projects" ? "selected" : ""}
+                    onClick={() => setMessageChannel("projects")}
+                  >
+                    Homeowner messages
+                  </button>
+                  <button
+                    className={messageChannel === "inquiries" ? "selected" : ""}
+                    onClick={() => setMessageChannel("inquiries")}
+                  >
+                    WhatsApp inquiries
+                  </button>
+                </div>
+              )}
+              {messageChannel === "inquiries" && !clientMode ? (
+                <Communications organizations={[org]} organizationId={org.id} />
+              ) : (
+                renderMessages()
+              )}
+            </>
+          )}
           {view === "Documents" &&
             renderDocuments(
               docs.filter((d) =>

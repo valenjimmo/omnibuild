@@ -27,15 +27,15 @@ export async function POST(request: NextRequest) {
   } = await db.auth.getUser();
   if (!user)
     return NextResponse.json({ error: "Sign in required" }, { status: 401 });
-  const { data: member } = await db
-    .from("memberships")
-    .select("role")
-    .eq("organization_id", input.data.organization_id)
-    .eq("user_id", user.id)
-    .single();
-  if (member?.role !== "owner")
+  const { data: isOwner } = await db.rpc("is_owner", {
+    org: input.data.organization_id,
+  });
+  if (!isOwner)
     return NextResponse.json(
-      { error: "Only organization owners can invite users" },
+      {
+        error:
+          "Only organization owners or Omnibuild administrators can invite users",
+      },
       { status: 403 },
     );
   if (input.data.client_id) {

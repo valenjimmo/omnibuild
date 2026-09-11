@@ -1,3 +1,7 @@
+# Updated ownership model
+
+Omnibuild is the platform operator, and organizations are its contractor clients. The main `/` route is the platform hub. Contractor workspaces live at `/workspace/[slug]`; homeowner portals remain at `/portal/[slug]`. See [Platform and WhatsApp](PLATFORM_AND_WHATSAPP.md) for the updated role hierarchy, website demonstration, and communications architecture.
+
 # Architecture
 
 One Next.js deployment serves many companies. A company's portal URL is `/portal/[organizationSlug]`; a slug selects presentation context and never grants authorization.

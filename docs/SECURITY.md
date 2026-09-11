@@ -2,12 +2,13 @@
 
 Authorization is enforced by PostgreSQL RLS and Storage policies. UI filtering and portal slugs are convenience features, not trust boundaries. All public application tables enable RLS; anonymous users receive no row policies. The browser only receives the public Supabase URL/anon key and a user session.
 
-| Actor     | Allowed                                                                                                                             |
-| --------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| Owner     | Own-company staff workflows, profile updates, issue invitations                                                                     |
-| Staff     | Own-company clients, projects, milestones, updates, file metadata/storage, templates, messages                                      |
-| Homeowner | Their active client record, assigned projects/milestones, client-visible updates/files, project messages; may send messages as self |
-| Anonymous | Authentication UI; no tenant records                                                                                                |
+| Actor                            | Allowed                                                                                                                             |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Omnibuild platform administrator | Manage contractor companies and their workspaces; issue contractor-owner invitations; map Meta receiving phone IDs                  |
+| Owner                            | Own-company staff workflows, profile updates, issue invitations                                                                     |
+| Staff                            | Own-company clients, projects, milestones, updates, file metadata/storage, templates, messages                                      |
+| Homeowner                        | Their active client record, assigned projects/milestones, client-visible updates/files, project messages; may send messages as self |
+| Anonymous                        | Authentication UI; no tenant records                                                                                                |
 
 A homeowner cannot see other clients in the same company. An archived client's project, update, document, photo, message, and new file-download access is removed. Existing signed download URLs remain valid until their 60-second expiry.
 
@@ -19,10 +20,14 @@ The owner is trusted to manage access within their company. Staff are trusted to
 
 ## Evidence and boundaries
 
-The automated SQL suite tests 47 assertions across tenant tables, homeowner restrictions, cross-tenant client assignment, sender spoofing, tenant movement, client identity payload manipulation, storage path traversal/mismatches, valid uploads/replies, staff escalation, and archive revocation. `npm test` executes this suite on PGlite PostgreSQL with minimal Auth/Storage fixture schemas and assertion helpers. `supabase test db` executes the same suite using pgTAP and the real local service schema.
+The automated SQL suite tests 67 assertions across tenant tables, homeowner restrictions, cross-tenant client assignment, sender spoofing, tenant movement, client identity payload manipulation, storage path traversal/mismatches, valid uploads/replies, staff escalation, and archive revocation. `npm test` executes this suite on PGlite PostgreSQL with minimal Auth/Storage fixture schemas and assertion helpers. `supabase test db` executes the same suite using pgTAP and the real local service schema.
 
 The embedded tests exercise real PostgreSQL RLS, foreign keys, roles, and triggers. They do not verify hosted email delivery, Supabase HTTP endpoints, JWT issuance, object byte storage, or Vercel routing. Run the full local Supabase suite and a hosted two-tenant acceptance test before production use. No credentials were provided during implementation, so those connected checks remain environment work.
 
 User content is rendered as React text, never raw HTML. Secrets are excluded from Git. The app has no billing, public file buckets, or privileged browser database client. Authentication uses Supabase SSR cookies and server token validation. Sessions are refreshed by the Next.js proxy.
 
 References: [Supabase RLS](https://supabase.com/docs/guides/database/postgres/row-level-security), [database testing](https://supabase.com/docs/guides/database/testing), and [server-side auth](https://supabase.com/docs/guides/auth/server-side).
+
+## Platform and WhatsApp extension
+
+The 20260911 migration introduces explicitly provisioned platform administrators. This is an intentional cross-contractor operator role, never granted by signup. Contractor roles remain tenant isolated. WhatsApp inquiries and message bodies are staff-only; homeowner and anonymous access is denied. The public contractor profile function exposes only company name, slug, and the designated public WhatsApp number. Ingestion is service-role-only and called only after webhook signature verification. See [Platform and WhatsApp](PLATFORM_AND_WHATSAPP.md) for setup and integration limitations.

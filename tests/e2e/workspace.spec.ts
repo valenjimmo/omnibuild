@@ -30,12 +30,12 @@ test("contractor can manage a project, share files, and message a homeowner", as
 }) => {
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
-  await page.goto("/");
+  await page.goto("/workspace/westwood-adu");
   await expect(
     page.getByRole("heading", { name: "Good things are taking shape." }),
   ).toBeVisible();
   await page.screenshot({ path: "/tmp/omnibuild-desktop.png", fullPage: true });
-  await page.getByRole("button", { name: "Clients", exact: true }).click();
+  await page.getByRole("button", { name: "Homeowners", exact: true }).click();
   await page.getByRole("button", { name: "Add client", exact: true }).click();
   await page.getByLabel("Full name").fill("Alex Rivera");
   await page.getByLabel("Email address").fill("alex@example.com");
@@ -112,7 +112,7 @@ test("homeowner portal hides internal information and supports custom replies", 
     page.getByRole("heading", { name: "Your next chapter starts here." }),
   ).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "Clients", exact: true }),
+    page.getByRole("button", { name: "Homeowners", exact: true }),
   ).toHaveCount(0);
   await expect(page.getByText("Crew coordination")).toHaveCount(0);
   await expect(
@@ -134,7 +134,7 @@ test("homeowner portal hides internal information and supports custom replies", 
 
 test("mobile navigation fits a phone viewport", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/");
+  await page.goto("/workspace/westwood-adu");
   await expect(
     page.getByRole("heading", { name: "Good things are taking shape." }),
   ).toBeVisible();

@@ -1,3 +1,7 @@
+# Scope update: platform hub and WhatsApp demonstration
+
+The user's follow-up expands the MVP: Omnibuild manages contractor clients, and a fictional contractor marketing website links to their Omnibuild homeowner portal. Basic WhatsApp inquiries, downloadable QR codes, and a verified inbound-webhook integration are now included. A full sales CRM, outbound WhatsApp automation, and Meta account onboarding remain outside this implementation. See [Platform and WhatsApp](PLATFORM_AND_WHATSAPP.md).
+
 # MVP implementation and acceptance
 
 ## Implemented

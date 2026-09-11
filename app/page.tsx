@@ -1,4 +1,4 @@
-import Workspace from "@/components/workspace";
+import Hub from "@/components/hub";
 export default function Page() {
-  return <Workspace />;
+  return <Hub />;
 }
