@@ -20,6 +20,7 @@ import { Dataset, emptyData, Row } from "@/lib/data";
 import { readDemo, saveDemo, whatsappLink } from "@/lib/demo";
 import Communications from "./communications";
 export default function Hub() {
+  const westwoodWebsiteUrl = process.env.NEXT_PUBLIC_CONTRACTOR_WEBSITE_URL_WESTWOOD?.trim();
   const [data, setData] = useState<Dataset>(emptyData),
     [loading, setLoading] = useState(true),
     [allowed, setAllowed] = useState(false),
@@ -481,7 +482,7 @@ export default function Hub() {
                       </div>
                       <div className="contractor-demo-links">
                         <a
-                          href={`/demo/contractor/${o.slug}`}
+                          href={o.slug === "westwood-adu" && westwoodWebsiteUrl ? westwoodWebsiteUrl : `/demo/contractor/${o.slug}`}
                           target="_blank"
                           rel="noreferrer"
                         >
@@ -556,7 +557,7 @@ export default function Hub() {
                   </p>
                   <a
                     className="button primary"
-                    href="/demo/contractor/westwood-adu"
+                    href={westwoodWebsiteUrl || "/demo/contractor/westwood-adu"}
                     target="_blank"
                     rel="noreferrer"
                   >
