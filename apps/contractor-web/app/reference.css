@@ -1,0 +1,27 @@
+/* Page sections adapted from 9ADU's homeowner journey, with Westwood's own design. */
+.hero{background:#e7e8df}
+.hero h1{max-width:660px}
+.intro{padding-bottom:110px}
+.section-heading{display:grid;grid-template-columns:1fr 1fr;gap:90px;align-items:end;margin-bottom:38px}
+.section-heading h2{font:normal clamp(38px,4vw,56px)/1.1 Georgia,serif;letter-spacing:-.04em;margin:20px 0 0}
+.section-heading h2 em{font-weight:normal;color:#9a664c}
+.section-heading>p{max-width:470px;color:var(--muted);line-height:1.8;margin:0 0 4px}
+.services-section{background:#f0f0e9;padding:100px 0 0}
+.services{padding-bottom:110px}
+.services article{border-top:3px solid #a67353}
+.mid-cta{background:#a96f50;color:#fff8ed}
+.mid-cta-inner{padding-top:46px;padding-bottom:46px;display:flex;align-items:center;justify-content:space-between;gap:24px}
+.mid-cta .eyebrow{color:#f5e4ce!important}
+.mid-cta h2{font:normal clamp(32px,3.5vw,48px) Georgia,serif;margin:10px 0}
+.advantages{padding-top:110px;padding-bottom:110px}
+.advantages-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:35px}
+.advantages-grid article{border-top:1px solid #a9b3a6;padding-top:24px}
+.advantages-grid span{font:normal 40px Georgia,serif;color:#a67353}
+.advantages-grid h3,.process-grid h3{font:normal 27px Georgia,serif;margin:24px 0 14px}
+.advantages-grid p,.process-grid p{color:var(--muted);line-height:1.7}
+.process{background:#e7e8df;padding:105px 0 115px}
+.process-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.process-grid article{background:#f8f7f1;padding:32px;min-height:225px}
+.process-grid span{font-size:11px;letter-spacing:.16em;font-weight:bold;color:#997457}
+@media(max-width:800px){.section-heading{grid-template-columns:1fr;gap:12px}.intro{padding-bottom:80px}.services-section{padding-top:80px}.advantages{padding-top:80px;padding-bottom:80px}.advantages-grid{grid-template-columns:1fr;gap:18px}.process{padding:80px 0}.process-grid{grid-template-columns:1fr}.process-grid article{min-height:0}}
+@media(max-width:500px){.nav nav{gap:12px;font-size:12px}.mid-cta-inner{align-items:flex-start;flex-direction:column}.services{padding-bottom:80px}}

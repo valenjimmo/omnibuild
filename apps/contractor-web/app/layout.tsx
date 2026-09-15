@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { contractorName, portalHref } from "../lib/site";
 import "./globals.css";
+import "./reference.css";
 
 export const metadata: Metadata = {
   title: `${contractorName} | Thoughtful spaces, built for living`,
@@ -13,7 +14,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return <html lang="en"><body>
     <header className="site-header"><div className="wrap nav">
       <Link className="brand" href="/" aria-label={`${contractorName} home`}><span className="brand-mark">W<span>.</span></span><span className="brand-name">WESTWOOD <small>ADU + REMODEL</small></span></Link>
-      <nav aria-label="Main navigation"><Link href="/#services">Services</Link><Link href="/projects">Projects</Link><Link href="/#contact">Contact</Link></nav>
+      <nav aria-label="Main navigation"><Link href="/#about">About</Link><Link href="/#services">Services</Link><Link href="/projects">Projects</Link><Link href="/#contact">Contact</Link></nav>
       <a className="button button-dark nav-cta" href={portal}>View project status <span aria-hidden="true">↗</span></a>
     </div></header>
     {children}

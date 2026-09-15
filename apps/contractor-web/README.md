@@ -2,6 +2,8 @@
 
 This is a standalone, fictional marketing site for a Bay Area contractor. The OmniBuild platform stays at the repository root and keeps its existing Vercel Root Directory. Moving it into `apps/platform` would add risk to its existing routing and deployment for no benefit to this test. This app has its own dependencies and deployment. It does not import files outside its directory, so Vercel's **Include files outside the Root Directory** setting is unnecessary.
 
+The homepage follows the homeowner journey on [9ADU](https://9adu.com/) as a structural reference: ADU-focused hero, company introduction, three ADU types, project highlight, builder advantages, process, and contact invitation. Westwood's wording, branding, and illustrations are original. The projects are fictional concept examples; this demo is not affiliated with 9ADU.
+
 The **View project status** links in the header and hero navigate in the **same tab** to the contractor's OmniBuild portal. The URL is built from these public build-time variables:
 
 ```bash
