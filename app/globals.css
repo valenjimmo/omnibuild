@@ -1276,6 +1276,16 @@ td small {
   align-items: center;
   gap: 14px;
 }
+.project-links {
+  align-items: flex-start;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  white-space: normal;
+}
+.project-links .text-button {
+  text-align: left;
+}
 .icon-button {
   display: inline-flex;
   align-items: center;

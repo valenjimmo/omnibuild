@@ -78,6 +78,8 @@ select throws_ok($$insert into storage.objects(bucket_id,name) values('project-f
 
 select set_config('request.jwt.claims','{"sub":"00000000-0000-4000-8000-000000000004","email":"staff-a@example.com"}',true);
 select is((select count(*)::int from projects),2,'Staff can manage their company projects');
+select is((select count(*)::int from clients),0,'Ordinary staff cannot browse homeowner identities');
+select throws_ok($$insert into clients(organization_id,name,email) values('10000000-0000-4000-8000-000000000001','Hidden client','hidden@example.com')$$,'42501',null,'Ordinary staff cannot create homeowner records');
 select throws_ok($$insert into invitations(organization_id,email,role) values('10000000-0000-4000-8000-000000000001','new@example.com','staff')$$,'42501',null,'Staff cannot invite or escalate membership');
 select throws_ok($$insert into memberships values('10000000-0000-4000-8000-000000000001','00000000-0000-4000-8000-000000000003','owner')$$,'42501',null,'Direct owner escalation denied');
 select lives_ok($$update templates set body='Staff overwrite' where organization_id='10000000-0000-4000-8000-000000000001'$$,'Unauthorized template update reveals no row');

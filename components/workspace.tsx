@@ -759,7 +759,7 @@ export default function Workspace({
             [
               "Overview",
               "Projects",
-              ...(!clientMode ? ["Clients"] : []),
+              ...(owner ? ["Clients"] : []),
               ...(!clientMode ? ["Inquiries"] : []),
             ] as View[]
           ).map((item) => {
@@ -1450,7 +1450,7 @@ export default function Workspace({
               {tab === "Messages" && renderMessages()}
             </>
           )}
-          {view === "Clients" && (
+          {view === "Clients" && owner && (
             <>
               <div className="toolbar">
                 <span className="subtle">
@@ -1495,11 +1495,22 @@ export default function Workspace({
                             <small>{c.phone}</small>
                           </td>
                           <td>
-                            {
-                              projects.filter((p) => p.client_id === c.id)
-                                .length
-                            }{" "}
-                            projects
+                            <div className="project-links">
+                              {projects
+                                .filter((p) => p.client_id === c.id)
+                                .map((p) => (
+                                  <button
+                                    className="text-button"
+                                    key={p.id}
+                                    onClick={() => openProject(p.id)}
+                                  >
+                                    {p.name} <ArrowRight size={13} />
+                                  </button>
+                                ))}
+                              {!projects.some((p) => p.client_id === c.id) && (
+                                <span>No project yet</span>
+                              )}
+                            </div>
                           </td>
                           <td>
                             <Badge
