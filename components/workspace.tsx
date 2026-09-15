@@ -48,6 +48,13 @@ type View =
   | "Templates"
   | "Settings";
 type Modal = { kind: string; row?: Row };
+const channelLabels: Record<string, string> = {
+  portal: "Portal",
+  email: "Email",
+  sms: "SMS",
+  whatsapp: "WhatsApp",
+  wechat: "WeChat",
+};
 const icons = {
   Overview: LayoutDashboard,
   Projects: FolderOpen,
@@ -127,6 +134,7 @@ export default function Workspace({
     [mobile, setMobile] = useState(false),
     [authMode, setAuthMode] = useState("login"),
     [message, setMessage] = useState(""),
+    [deliveryChannel, setDeliveryChannel] = useState("portal"),
     [responses, setResponses] = useState<string[]>([]),
     [conversation, setConversation] = useState(""),
     [notices, setNotices] = useState(false);
@@ -166,6 +174,7 @@ export default function Workspace({
   );
   const templates = scope(data.templates);
   const project = projects.find((p) => p.id === selected);
+  const enabledChannels: string[] = org?.enabled_message_channels || ["portal"];
   const active = projects.filter((p) => p.status !== "Completed");
   const clientName = (id: string) =>
     clients.find((c) => c.id === id)?.name || "Client";
@@ -273,6 +282,19 @@ export default function Workspace({
         const saved = localStorage.getItem("omnibuild-demo-v1");
         if (saved) d = JSON.parse(saved);
       } catch {}
+      d = {
+        ...d,
+        organizations: d.organizations.map((o) => ({
+          enabled_message_channels: ["portal", "email", "sms", "whatsapp"],
+          ...o,
+        })),
+        projects: d.projects.map((p) => ({
+          preferred_message_channel: "portal",
+          ...p,
+        })),
+        messages: d.messages.map((m) => ({ channel: "portal", ...m })),
+        templates: d.templates.map((t) => ({ channel: "portal", ...t })),
+      };
       setData(d);
       setOrgId(
         d.organizations.find((o) => o.slug === targetSlug)?.id ||
@@ -385,6 +407,8 @@ export default function Workspace({
             description: val("description"),
             status: val("status"),
             due_date: val("due_date") || null,
+            preferred_message_channel:
+              val("preferred_message_channel") || "portal",
           },
           row?.id,
         );
@@ -412,6 +436,7 @@ export default function Workspace({
               .split("\n")
               .map((r) => r.trim())
               .filter(Boolean),
+            channel: val("channel") || "portal",
           },
           row?.id,
         );
@@ -448,10 +473,15 @@ export default function Workspace({
         sender_id: userId,
         body: body.trim(),
         responses,
+        channel: clientMode ? "portal" : deliveryChannel,
       });
       setMessage("");
       setResponses([]);
-      notify("Message sent");
+      notify(
+        deliveryChannel === "portal" || clientMode
+          ? "Message shared in the project portal"
+          : `${channelLabels[deliveryChannel]} selected; message saved to the project. External delivery requires a connected provider.`,
+      );
     });
   }
   async function upload(file: File) {
@@ -521,6 +551,11 @@ export default function Workspace({
   }
   const navigate = (next: View) => {
     setView(next);
+    if (next === "Messages") {
+      const target =
+        projects.find((p) => p.id === currentConversation) || projects[0];
+      setDeliveryChannel(target?.preferred_message_channel || "portal");
+    }
     setSelected(null);
     setQuery("");
     setMobile(false);
@@ -917,7 +952,8 @@ export default function Workspace({
               {!clientMode &&
                 ["Overview", "Projects", "Clients", "Templates"].includes(
                   view,
-                ) && (
+                ) &&
+                (view !== "Templates" || owner) && (
                   <button
                     className="button primary"
                     onClick={() =>
@@ -1223,7 +1259,12 @@ export default function Workspace({
                       className={tab === t ? "selected" : ""}
                       onClick={() => {
                         setTab(t);
-                        if (t === "Messages") setConversation(project.id);
+                        if (t === "Messages") {
+                          setConversation(project.id);
+                          setDeliveryChannel(
+                            project.preferred_message_channel || "portal",
+                          );
+                        }
                       }}
                     >
                       {t}
@@ -1550,12 +1591,14 @@ export default function Workspace({
                     ))}
                   </div>
                   <div className="template-footer">
-                    <button
-                      className="text-button"
-                      onClick={() => setModal({ kind: "template", row: t })}
-                    >
-                      Edit template
-                    </button>
+                    {owner && (
+                      <button
+                        className="text-button"
+                        onClick={() => setModal({ kind: "template", row: t })}
+                      >
+                        Edit template
+                      </button>
+                    )}
                     <button
                       className="text-button"
                       onClick={() => {
@@ -1588,10 +1631,16 @@ export default function Workspace({
                   onSubmit={(e) => {
                     e.preventDefault();
                     const f = new FormData(e.currentTarget);
+                    const channels = f.getAll("message_channels").map(String);
+                    if (!channels.length) {
+                      notify("Choose at least one communication channel.");
+                      return;
+                    }
                     action(async () => {
                       const values = {
                         name: String(f.get("name")),
                         logo_url: String(f.get("logo_url")) || null,
+                        enabled_message_channels: channels,
                       };
                       if (demo) {
                         const next = {
@@ -1632,6 +1681,27 @@ export default function Workspace({
                       alt="Company logo"
                     />
                   )}
+                  <fieldset
+                    className="channel-settings"
+                    disabled={!owner || busy}
+                  >
+                    <legend>Available communication channels</legend>
+                    <p className="subtle">
+                      Portal messages work now. External channels require a
+                      provider connection before delivery.
+                    </p>
+                    {Object.entries(channelLabels).map(([value, label]) => (
+                      <label key={value}>
+                        <input
+                          type="checkbox"
+                          name="message_channels"
+                          value={value}
+                          defaultChecked={enabledChannels.includes(value)}
+                        />
+                        {label}
+                      </label>
+                    ))}
+                  </fieldset>
                   <button className="button primary" disabled={!owner || busy}>
                     Save changes
                   </button>
@@ -1859,6 +1929,21 @@ export default function Workspace({
                       false,
                     )}
                   </div>
+                  <label className="field">
+                    Default communication channel
+                    <select
+                      name="preferred_message_channel"
+                      defaultValue={
+                        modal.row?.preferred_message_channel || "portal"
+                      }
+                    >
+                      {enabledChannels.map((channel) => (
+                        <option key={channel} value={channel}>
+                          {channelLabels[channel]}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
                 </>
               )}
               {modal.kind === "milestone" && (
@@ -1899,6 +1984,19 @@ export default function Workspace({
               {modal.kind === "template" && (
                 <>
                   {input("Template name", "title", modal.row?.title)}
+                  <label className="field">
+                    Default channel
+                    <select
+                      name="channel"
+                      defaultValue={modal.row?.channel || "portal"}
+                    >
+                      {enabledChannels.map((channel) => (
+                        <option key={channel} value={channel}>
+                          {channelLabels[channel]}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
                   <label className="field">
                     Message
                     <textarea
@@ -2090,6 +2188,7 @@ export default function Workspace({
               }
               onClick={() => {
                 setConversation(p.id);
+                setDeliveryChannel(p.preferred_message_channel || "portal");
                 setResponses([]);
                 setMessage("");
               }}
@@ -2150,7 +2249,8 @@ export default function Workspace({
                       {new Date(m.created_at).toLocaleTimeString("en-US", {
                         hour: "numeric",
                         minute: "2-digit",
-                      })}
+                      })}{" "}
+                      · {channelLabels[m.channel || "portal"]}
                     </small>
                     {m.sender_id !== userId && m.responses?.length > 0 && (
                       <div className="quick-responses">
@@ -2181,24 +2281,40 @@ export default function Workspace({
                 }}
               >
                 {!clientMode && (
-                  <select
-                    aria-label="Use a message template"
-                    value=""
-                    onChange={(e) => {
-                      const t = templates.find((t) => t.id === e.target.value);
-                      if (t) {
-                        setMessage(t.body);
-                        setResponses(t.responses);
-                      }
-                    }}
-                  >
-                    <option value="">✧ Use a message template</option>
-                    {templates.map((t) => (
-                      <option key={t.id} value={t.id}>
-                        {t.title}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="composer-options">
+                    <select
+                      aria-label="Use a message template"
+                      value=""
+                      onChange={(e) => {
+                        const t = templates.find(
+                          (t) => t.id === e.target.value,
+                        );
+                        if (t) {
+                          setMessage(t.body);
+                          setResponses(t.responses);
+                          setDeliveryChannel(t.channel || "portal");
+                        }
+                      }}
+                    >
+                      <option value="">✧ Use a message template</option>
+                      {templates.map((t) => (
+                        <option key={t.id} value={t.id}>
+                          {t.title}
+                        </option>
+                      ))}
+                    </select>
+                    <select
+                      aria-label="Communication channel"
+                      value={deliveryChannel}
+                      onChange={(e) => setDeliveryChannel(e.target.value)}
+                    >
+                      {enabledChannels.map((channel) => (
+                        <option key={channel} value={channel}>
+                          {channelLabels[channel]}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 )}
                 {responses.length > 0 && (
                   <div className="response-preview">
@@ -2231,7 +2347,11 @@ export default function Workspace({
                     <Send size={17} />
                   </button>
                 </div>
-                <small>Shared with your project team and homeowner.</small>
+                <small>
+                  {clientMode || deliveryChannel === "portal"
+                    ? "Shared with your project team and homeowner."
+                    : `${channelLabels[deliveryChannel]} is the delivery preference. Connect its provider before external delivery.`}
+                </small>
               </form>
             </>
           ) : (

@@ -1459,6 +1459,37 @@ td small {
   grid-template-columns: 1fr 1fr;
   gap: 17px;
 }
+.channel-settings {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  margin: 22px 0;
+  padding: 16px;
+}
+.channel-settings legend {
+  color: #526847;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 0 6px;
+}
+.channel-settings label {
+  align-items: center;
+  color: #526847;
+  display: inline-flex;
+  font-size: 13px;
+  gap: 7px;
+  margin: 7px 18px 7px 0;
+}
+.channel-settings input {
+  accent-color: var(--green);
+}
+.composer-options {
+  display: grid;
+  grid-template-columns: 1fr 150px;
+  gap: 10px;
+}
+.composer-options select {
+  width: 100%;
+}
 .copy-field {
   display: flex;
   align-items: center;

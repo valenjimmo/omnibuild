@@ -35,6 +35,7 @@ export function demoData(): Dataset {
         contact_email: "owner@westwood.example",
         website_url: "",
         whatsapp_number: "",
+        enabled_message_channels: ["portal", "email", "sms", "whatsapp"],
       },
     ],
     memberships: [
@@ -91,6 +92,7 @@ export function demoData(): Dataset {
         status: "In progress",
         due_date: "2026-11-20",
         style: 0,
+        preferred_message_channel: "email",
       },
       {
         id: "p2",
@@ -103,6 +105,7 @@ export function demoData(): Dataset {
         status: "Permitting",
         due_date: "2027-01-15",
         style: 1,
+        preferred_message_channel: "sms",
       },
       {
         id: "p3",
@@ -115,6 +118,7 @@ export function demoData(): Dataset {
         status: "Planning",
         due_date: "2027-02-28",
         style: 2,
+        preferred_message_channel: "whatsapp",
       },
       {
         id: "p4",
@@ -127,6 +131,7 @@ export function demoData(): Dataset {
         status: "Completed",
         due_date: "2026-09-04",
         style: 3,
+        preferred_message_channel: "portal",
       },
     ],
     milestones: [
@@ -223,6 +228,7 @@ export function demoData(): Dataset {
         sender_id: "demo-client",
         body: "The progress looks amazing! Would it be possible to stop by the site this Friday?",
         responses: [],
+        channel: "email",
         created_at: "2026-09-10T09:12:00Z",
       },
       {
@@ -232,6 +238,7 @@ export function demoData(): Dataset {
         sender_id: "demo-client",
         body: "Thanks for the update. Looking forward to the next steps!",
         responses: [],
+        channel: "sms",
         created_at: "2026-09-09T16:30:00Z",
       },
     ],
@@ -242,6 +249,7 @@ export function demoData(): Dataset {
         title: "Schedule a site visit",
         body: "We would love to walk you through the progress. Does this Friday at 10 am work for a site visit?",
         responses: ["Yes, that works!", "Could we find another time?"],
+        channel: "email",
       },
       {
         id: "t2",
@@ -249,6 +257,7 @@ export function demoData(): Dataset {
         title: "Milestone complete",
         body: "Great news! We have completed the next milestone on your project. Take a look at the latest update in your portal.",
         responses: ["Looks great, thank you!", "I have a question"],
+        channel: "portal",
       },
       {
         id: "t3",
@@ -256,6 +265,7 @@ export function demoData(): Dataset {
         title: "Selection reminder",
         body: "We are ready for your finish selections. Please review the options and let us know your preference.",
         responses: ["I am ready to choose", "I need a little more time"],
+        channel: "sms",
       },
     ],
   };

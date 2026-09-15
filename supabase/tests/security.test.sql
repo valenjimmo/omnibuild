@@ -46,6 +46,7 @@ select is((select count(*)::int from documents where kind='document'),4,'Documen
 select is((select count(*)::int from documents where kind='photo'),2,'Photos isolated by tenant');
 select is((select count(*)::int from messages),2,'Messages isolated by tenant');
 select is((select count(*)::int from templates),1,'Templates isolated by tenant');
+select lives_ok($$update templates set body='Owner wording' where organization_id='10000000-0000-4000-8000-000000000001'$$,'Contractor owner can customize predefined messages');
 select is((select count(*)::int from storage.objects),6,'Storage reads isolated by tenant');
 select is((select count(*)::int from projects where id='30000000-0000-4000-8000-000000000002'),0,'Forged project route UUID reveals nothing');
 select throws_ok($$insert into clients(organization_id,name,email) values('10000000-0000-4000-8000-000000000002','Forged','x@example.com')$$,'42501',null,'Forged tenant insert denied');
@@ -72,12 +73,15 @@ select is((select count(*)::int from messages),1,'Homeowner conversations limite
 select throws_ok($$insert into updates(organization_id,project_id,title,body) values('10000000-0000-4000-8000-000000000001','30000000-0000-4000-8000-000000000001','Forged','Update')$$,'42501',null,'Homeowner cannot author contractor updates');
 select throws_ok($$insert into messages(organization_id,project_id,body) values('10000000-0000-4000-8000-000000000001','30000000-0000-4000-8000-000000000003','Wrong project')$$,'42501',null,'Homeowner cannot message another client project');
 select lives_ok($$insert into messages(organization_id,project_id,body) values('10000000-0000-4000-8000-000000000001','30000000-0000-4000-8000-000000000001','Custom homeowner response')$$,'Homeowner can send custom responses');
+select throws_ok($$insert into messages(organization_id,project_id,body,channel) values('10000000-0000-4000-8000-000000000001','30000000-0000-4000-8000-000000000001','Fake SMS','sms')$$,'42501',null,'Homeowner cannot claim an external delivery channel');
 select throws_ok($$insert into storage.objects(bucket_id,name) values('project-files','10000000-0000-4000-8000-000000000001/30000000-0000-4000-8000-000000000001/client.pdf')$$,'42501',null,'Homeowner cannot upload staff files');
 
 select set_config('request.jwt.claims','{"sub":"00000000-0000-4000-8000-000000000004","email":"staff-a@example.com"}',true);
 select is((select count(*)::int from projects),2,'Staff can manage their company projects');
 select throws_ok($$insert into invitations(organization_id,email,role) values('10000000-0000-4000-8000-000000000001','new@example.com','staff')$$,'42501',null,'Staff cannot invite or escalate membership');
 select throws_ok($$insert into memberships values('10000000-0000-4000-8000-000000000001','00000000-0000-4000-8000-000000000003','owner')$$,'42501',null,'Direct owner escalation denied');
+select lives_ok($$update templates set body='Staff overwrite' where organization_id='10000000-0000-4000-8000-000000000001'$$,'Unauthorized template update reveals no row');
+select is((select count(*)::int from templates where body='Staff overwrite'),0,'Staff cannot change owner-defined templates');
 
 reset role;
 update clients set archived=true where id='20000000-0000-4000-8000-000000000001';
@@ -105,6 +109,7 @@ select throws_ok($$select create_contractor('Bad tenant','bad-tenant','a@example
 select throws_ok($$insert into platform_admins values('00000000-0000-4000-8000-000000000005')$$,'42501',null,'Platform role cannot be self-granted');
 reset role;
 insert into platform_admins values('00000000-0000-4000-8000-000000000001');
+select throws_ok($$insert into platform_admins values('00000000-0000-4000-8000-000000000002')$$,'23505',null,'Only one global platform administrator can exist');
 set local role authenticated;
 select set_config('request.jwt.claims','{"sub":"00000000-0000-4000-8000-000000000001","email":"owner-a@example.com"}',true);
 select is((select public.is_platform_admin()::int),1,'Explicitly provisioned platform administrator recognized');

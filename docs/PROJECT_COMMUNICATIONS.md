@@ -1,0 +1,9 @@
+# Project communications and access
+
+Messages and documents belong to a project and organization. The database requires both IDs and uses composite foreign keys, immutable tenant IDs, and row-level security. A portal URL does not grant access. An authenticated homeowner sees only projects assigned to their client record; a Westwood owner or staff member sees Westwood projects only. The single explicitly provisioned OmniBuild platform administrator can inspect every contractor for support and oversight.
+
+Contractor owners configure the available channels under **Settings** and choose a default per project. Each saved message records its selected channel, so its history remains inside the project. Owners also create and edit predefined messages under **Templates**; staff may use those templates but cannot rewrite them. Homeowner replies always enter through the authenticated portal.
+
+`portal` works as the built-in channel. `email`, `sms`, `whatsapp`, and `wechat` are preferences until a provider is connected. The UI deliberately says this instead of claiming delivery. Implementing outbound delivery requires a server-side dispatch queue, provider message IDs and delivery states, retry/idempotency handling, opt-in and unsubscribe records, verified inbound webhook signatures, and rate limits. Provider tokens must stay in server-only environment variables. Never put them in `NEXT_PUBLIC_*` variables or browser code.
+
+WhatsApp already has a verified inbound webhook path for new inquiries, isolated by the receiving Meta phone ID. Project messaging needs a separate outbound integration and client-to-project mapping. SMS and email need provider accounts and consent handling. WeChat generally requires an approved Official Account or Mini Program and has region- and account-specific API constraints, so it should be connected only after the intended account and geography are known.
