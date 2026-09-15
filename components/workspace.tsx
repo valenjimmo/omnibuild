@@ -43,6 +43,7 @@ type View =
   | "Overview"
   | "Projects"
   | "Clients"
+  | "Inquiries"
   | "Messages"
   | "Documents"
   | "Templates"
@@ -59,6 +60,7 @@ const icons = {
   Overview: LayoutDashboard,
   Projects: FolderOpen,
   Clients: Users,
+  Inquiries: Mail,
   Messages: MessageSquare,
   Documents: FileText,
   Templates: ClipboardList,
@@ -117,7 +119,6 @@ export default function Workspace({
 }) {
   const targetSlug = portalSlug || organizationSlug;
   const [platformAdmin, setPlatformAdmin] = useState(false);
-  const [messageChannel, setMessageChannel] = useState("projects");
   const [data, setData] = useState<Dataset>(emptyData),
     [orgId, setOrgId] = useState(""),
     [userId, setUserId] = useState("demo-owner"),
@@ -269,8 +270,7 @@ export default function Workspace({
   }
   useEffect(() => {
     if (new URLSearchParams(location.search).get("view") === "inquiries") {
-      setView("Messages");
-      setMessageChannel("inquiries");
+      setView("Inquiries");
     }
     if (new URLSearchParams(location.search).get("auth") === "error")
       notify(
@@ -440,6 +440,17 @@ export default function Workspace({
           },
           row?.id,
         );
+      if (kind === "use-template") {
+        const template = row!;
+        const projectId = val("project_id");
+        setMessage(template.body);
+        setResponses(template.responses);
+        setDeliveryChannel(template.channel || "portal");
+        openProjectMessages(projectId);
+        setModal(null);
+        notify("Template ready in this project conversation");
+        return;
+      }
       if (kind === "invite") {
         if (demo) {
           notify(
@@ -564,6 +575,11 @@ export default function Workspace({
     setSelected(id);
     setView("Projects");
     setTab("Overview");
+  };
+  const openProjectMessages = (id: string) => {
+    openProject(id);
+    setTab("Messages");
+    setConversation(id);
   };
   const projectOptions = projects.map((p) => (
     <option key={p.id} value={p.id}>
@@ -744,8 +760,7 @@ export default function Workspace({
               "Overview",
               "Projects",
               ...(!clientMode ? ["Clients"] : []),
-              "Messages",
-              "Documents",
+              ...(!clientMode ? ["Inquiries"] : []),
             ] as View[]
           ).map((item) => {
             const Icon = icons[item];
@@ -758,9 +773,6 @@ export default function Workspace({
               >
                 <Icon size={19} />
                 {item === "Clients" ? "Homeowners" : item}
-                {item === "Messages" && messages.length > 0 && (
-                  <span className="nav-count">{messages.length}</span>
-                )}
               </button>
             );
           })}
@@ -938,6 +950,8 @@ export default function Workspace({
                         "Every build, from the first sketch to the final walkthrough.",
                       Clients:
                         "Your homeowners and their project relationships.",
+                      Inquiries:
+                        "New conversations that have not become projects yet.",
                       Messages:
                         "Keep the conversation moving, all in one place.",
                       Documents:
@@ -1168,7 +1182,9 @@ export default function Workspace({
                       className="button"
                       onClick={() =>
                         clientMode
-                          ? navigate("Messages")
+                          ? projects.length
+                            ? openProjectMessages(projects[0].id)
+                            : notify("No project is assigned to your portal.")
                           : projects.length
                             ? setModal({ kind: "update" })
                             : notify("Create a project to share an update.")
@@ -1545,37 +1561,9 @@ export default function Workspace({
               </div>
             </>
           )}
-          {view === "Messages" && (
-            <>
-              {!clientMode && (
-                <div className="detail-tabs">
-                  <button
-                    className={messageChannel === "projects" ? "selected" : ""}
-                    onClick={() => setMessageChannel("projects")}
-                  >
-                    Homeowner messages
-                  </button>
-                  <button
-                    className={messageChannel === "inquiries" ? "selected" : ""}
-                    onClick={() => setMessageChannel("inquiries")}
-                  >
-                    WhatsApp inquiries
-                  </button>
-                </div>
-              )}
-              {messageChannel === "inquiries" && !clientMode ? (
-                <Communications organizations={[org]} organizationId={org.id} />
-              ) : (
-                renderMessages()
-              )}
-            </>
+          {view === "Inquiries" && !clientMode && (
+            <Communications organizations={[org]} organizationId={org.id} />
           )}
-          {view === "Documents" &&
-            renderDocuments(
-              docs.filter((d) =>
-                d.name.toLowerCase().includes(query.toLowerCase()),
-              ),
-            )}
           {view === "Templates" && (
             <div className="template-grid">
               {templates.map((t) => (
@@ -1601,13 +1589,9 @@ export default function Workspace({
                     )}
                     <button
                       className="text-button"
-                      onClick={() => {
-                        setMessage(t.body);
-                        setResponses(t.responses);
-                        navigate("Messages");
-                      }}
+                      onClick={() => setModal({ kind: "use-template", row: t })}
                     >
-                      Use template
+                      Use in project
                       <ArrowUpRight size={15} />
                     </button>
                   </div>
@@ -1834,9 +1818,11 @@ export default function Workspace({
                 <h2 id="modal-title">
                   {modal.kind === "invite"
                     ? "Invite " + (modal.row ? "client" : "team member")
-                    : modal.row
-                      ? "Edit " + modal.kind
-                      : "New " + modal.kind}
+                    : modal.kind === "use-template"
+                      ? "Choose a project"
+                      : modal.row
+                        ? "Edit " + modal.kind
+                        : "New " + modal.kind}
                 </h2>
               </div>
               <button
@@ -2023,6 +2009,22 @@ export default function Workspace({
                   </p>
                 </>
               )}
+              {modal.kind === "use-template" && (
+                <>
+                  <p className="description">
+                    Choose the project conversation for “{modal.row?.title}.”
+                  </p>
+                  <label className="field">
+                    Project
+                    <select name="project_id" required defaultValue="">
+                      <option value="" disabled>
+                        Select a project
+                      </option>
+                      {projectOptions}
+                    </select>
+                  </label>
+                </>
+              )}
               {modal.kind === "invite" && (
                 <>
                   <p className="description">
@@ -2053,7 +2055,9 @@ export default function Workspace({
                     ? "Saving…"
                     : modal.kind === "invite"
                       ? "Send invitation"
-                      : "Save " + modal.kind}
+                      : modal.kind === "use-template"
+                        ? "Continue to project"
+                        : "Save " + modal.kind}
                   <ArrowRight size={16} />
                 </button>
               </div>
